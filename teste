@@ -1,30 +1,3 @@
-;===================Declaração de variáveis iniciais===================;
-section .data
-   
-    Menu db 'Digite a quantidade de discos: ' ,0xa      ; mensagem do começo para pedir a quantidade
-    Menu_len equ $-Menu                 ; Tamanho da mensagem, em Menu_len
-
-    msg_concluido db 'A Torre de Hanoi foi finalizada!', 0xa ; mensagem do final
-    len_concluido equ $-msg_concluido   ; Tamanho da mensagem
-
-;Saida
-
-    msg_pino:
-                   db        "Mova o disco "   
-    disco:            db        " "
-                      db        " da torre "                     
-    torre_origem:      db        " "  
-                      db        " para torre "     
-    torre_destino:     db        " ", 0xa  ; Para quebrar linha
-    
-len_msg_pino            equ       $-msg_pino
-
-
-;===================Variáveis não inicializadas===================;
-section .bss
-
-    discos resb 4                 ; Armazenamento de dados não inicializado
-
 ;===================Executável===================;
 
 section .text
@@ -134,7 +107,7 @@ stringparaint:
         cmp eax,0x0                     ; Compara eax com 0x0=0 em hexadecimal 
         jle fim                         ; Se for menor ou igual a 0 desempilha
         
-;Recursao
+;1- Recursao
 
         dec eax                         ; -1
         push dword [ebp+16]             ; Coloca na pilha o pino de trabalho
@@ -198,7 +171,31 @@ stringparaint:
 
         mov     esp, ebp                ; Ebp para esp
         pop     ebp                     ; Topo da pilha para o ebp
-        ret                         
+        ret                   
+        
+;===================Declaração de variáveis iniciais===================;
+section .data
+   
+    Menu db 'Digite a quantidade de discos: ' ,0xa      ; mensagem do começo para pedir a quantidade
+    Menu_len equ $-Menu                 ; Tamanho da mensagem, em Menu_len
+
+    msg_concluido db 'A Torre de Hanoi foi finalizada!', 0xa ; mensagem do final
+    len_concluido equ $-msg_concluido   ; Tamanho da mensagem
+
+;Saida
+
+    msg_pino:
+                   db        "Mova o disco "   
+    disco:            db        " "
+                      db        " da torre "                     
+    torre_origem:      db        " "  
+                      db        " para torre "     
+    torre_destino:     db        " ", 0xa  ; Para quebrar linha
+    
+len_msg_pino            equ       $-msg_pino
 
 
+;===================Variáveis não inicializadas===================;
+section .bss
 
+    discos resb 6                 ; Armazenamento de dados não inicializado
