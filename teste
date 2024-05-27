@@ -1,0 +1,204 @@
+;===================Declaração de variáveis iniciais===================;
+section .data
+   
+    Menu db 'Digite a quantidade de discos: ' ,0xa      ; mensagem do começo para pedir a quantidade
+    Menu_len equ $-Menu                 ; Tamanho da mensagem, em Menu_len
+
+    msg_concluido db 'A Torre de Hanoi foi finalizada!', 0xa ; mensagem do final
+    len_concluido equ $-msg_concluido   ; Tamanho da mensagem
+
+;Saida
+
+    msg_pino:
+                   db        "Mova o disco "   
+    disco:            db        " "
+                      db        " da torre "                     
+    torre_origem:      db        " "  
+                      db        " para torre "     
+    torre_destino:     db        " ", 0xa  ; Para quebrar linha
+    
+len_msg_pino            equ       $-msg_pino
+
+
+;===================Variáveis não inicializadas===================;
+section .bss
+
+    discos resb 4                 ; Armazenamento de dados não inicializado
+
+;===================Executável===================;
+
+section .text
+
+    global _start                       
+
+;===================Pricipal===================;
+
+    _start:
+
+;Inicio do código
+
+        push ebp                        ; Salva o registrador ebp na base da pilha
+        mov ebp, esp                    ; Ebp recebe o ponteiro para o topo da pilha
+
+
+    pedir_numero:
+
+;Output
+
+        mov edx, Menu_len               ; Recebe o Menu_len da mensagem
+        mov ecx, Menu                   ; Recebe a mensagem
+        
+        mov ebx, 1                      ; Input padrão 
+        mov eax, 4                      ; Output
+        int 0x80                        ; Interrupção
+
+;Input
+
+        mov edx, 5                      ; Menu_len da input 
+        mov ecx, discos                 ; Armazenamento em 'discos'
+        
+        mov ebx, 0                      ; Input padrão
+        mov eax, 3                      ; Input           
+        int 0x80                        ; Interrupção
+        
+        mov edx, discos                 ; Menu de discos eax
+        call    stringparaint
+
+;Ordem das 3 torres 
+
+        push dword 0x2                  ; Pino de trabalho
+        push dword 0x3                  ; Pino de destino
+        push dword 0x1                  ; Pino de origem
+        push eax                        ; Eax na pilha
+
+        call torrehanoi                 ; Chama a função hanoi
+
+        jmp Programa_fim                ; Vai para o fim do programa
+
+        ; finaliza
+        mov eax, 1                      ; Saida do sistema
+        mov ebx, 0                      ; Saida padrão  
+        int 0x80                        ; Interrupção Kernel
+
+;Função para finalizar o programa;
+
+Programa_fim:
+
+;Mensagem de conclusão
+
+        mov edx, len_concluido          ; Tamanho da mensagem "Finalizou a torre de Hanoi"
+        mov ecx, msg_concluido          ; Mensagem "Finalizou a torre de Hanoi"
+
+        mov ebx, 1                      ; Output padrão
+        mov eax, 4                      ; Input
+        int 0x80                        ; Interrupção Kernel
+
+;Fim
+
+        mov eax, 1                      ; Output do sistema
+        mov ebx, 0                      ; Output padrão  
+        int 0x80                        ; Interrupção Kernel
+
+
+;===================Conversão de ASCII para int===================;
+stringparaint:
+
+    xor     eax, eax                    ; Limpa o registrador
+    mov     ebx, 10                     ; Auxiliar de multiplicação.
+    
+    .loop:
+        movzx   ecx, byte [edx]         ; Um byte de edx p/ ecx (1 numero)
+        inc     edx                     ; +1
+        cmp     ecx, '0'                ; Compara ecx com '0'
+        jb      .done                   ; Se for menor pula pra linha .done
+        cmp     ecx, '9'                ; Compara ecx com '9'
+        ja      .done                   ; Se for maior pula pra linha .done
+        
+        sub     ecx, '0'                ; Duminui a string de zero (transformar em int)
+        imul    eax, ebx                ; Multiplica por ebx
+        add     eax, ecx                ; Adiciona ecx que foi para eax
+        jmp     .loop                   ; Loop até .done
+    
+    .done:
+        ret                             ; Sair 
+
+
+;===================Algoritmo da Torre de Hanói===================;
+
+    torrehanoi: 
+
+        push ebp                        ; Ebp na base pilha
+        mov ebp, esp                    ; Ebp recebe o ponteiro do topo da pilha (esp)
+
+        mov eax,[ebp+8]                 ; Primeiro elemento da pilha (numero digitado)
+        cmp eax,0x0                     ; Compara eax com 0x0=0 em hexadecimal 
+        jle fim                         ; Se for menor ou igual a 0 desempilha
+        
+;Recursao
+
+        dec eax                         ; -1
+        push dword [ebp+16]             ; Coloca na pilha o pino de trabalho
+        push dword [ebp+20]             ; Coloca na pilha o pino de destino
+        push dword [ebp+12]             ; Coloca na pilha o pino de origem
+        push dword eax                  ; Poe eax na pilha com -1 para a recursividade
+
+        call torrehanoi                 ; Recursao
+
+;2- move o pino e imprime
+
+        add esp,12                      ; Libera 12bits de espaço (ultimo-primeiro)
+        push dword [ebp+16]             ; Pega o pino de origem referenciado pelo parâmetro ebp+16
+        push dword [ebp+12]             ; Coloca na pilha o pino de origem
+        push dword [ebp+8]              ; Coloca na pilha o pino de o numero de disco inicial
+        call imprime                    ; Chama a função 'imprime'
+        
+;3- recursao
+
+        add esp,12                      ; Libera 12bits de espaço (ultimo-primeiro)
+        push dword [ebp+12]             ; Coloca na pilha o pino de origem
+        push dword [ebp+16]             ; Coloca na pilha o pino de trabalho
+        push dword [ebp+20]             ; Coloca na pilha o pino de destino
+        mov eax,[ebp+8]                 ; Número de discos atuais
+        dec eax                         ; -1
+
+    push dword eax                      ; Poe eax na pilha
+        call torrehanoi                 ; Recursao
+
+
+    fim: 
+
+        mov esp,ebp                     ; Ebp para esp (guarda em outro registrador)
+        pop ebp                         ; Tira da pilha o ebp (desempilha)
+        ret                             
+
+
+    imprime:
+
+        push ebp                        ; Empilha
+        mov ebp, esp                    ; Recebe o ponteiro do topo da pilha (esp)
+
+        mov eax, [ebp + 8]              ; Coloca no registrador ax o disco a ser movido
+        add al, 48                      ; Conversao na tabela ASCII
+        mov [disco], al                 ; Coloca o valor no [disco] para o print
+
+        mov eax, [ebp + 12]             ; Pino de trabalho
+        add al, 64                      ; Conversao para ASCII
+        mov [torre_origem], al          ; Al para [torre_origem]
+
+        mov eax, [ebp + 16]             ; Pino de destino
+        add al, 64                      ; Conversao para ASCII
+        mov [torre_destino], al         ; Al para [torre_destino]
+
+        mov edx, len_msg_pino           ; Tamanho da mensagem 
+        mov ecx, msg_pino               ; Mensagem em si
+
+        mov ebx, 1                      ; Permissão para a saida
+        mov eax, 4                      ; Output
+        int 0x80                        ; Interrupção kernel
+
+        mov     esp, ebp                ; Ebp para esp
+        pop     ebp                     ; Topo da pilha para o ebp
+        ret                         
+
+
+
